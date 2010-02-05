@@ -8,21 +8,26 @@ import django_filters
 from django_filters.tests.django_filters_testapp.models import User, Comment, Book, Restaurant, Article, STATUS_CHOICES
 
 
-def syncdb_test_app(test_app):
+def add_test_apps(test_apps):
     from django.db.models.loading import load_app
     from django.core.management import call_command
-    old_INSTALLED_APPS = settings.INSTALLED_APPS
-    settings.INSTALLED_APPS = tuple(settings.INSTALLED_APPS) + (test_app,)
-    load_app(test_app)
+    original_INSTALLED_APPS = settings.INSTALLED_APPS
+    settings.INSTALLED_APPS = tuple(settings.INSTALLED_APPS) + tuple(test_apps)
+    for test_app in test_apps:
+        load_app(test_app)
     call_command('syncdb', verbosity=0, interactive=False)
-    return old_INSTALLED_APPS
+    return original_INSTALLED_APPS
 
 
 class TestCase(DjangoTestCase):
+    TEST_APPS = ('django_filters.tests.django_filters_testapp',)
 
-    def setUp(self):
-        apps = syncdb_test_app('django_filters.tests.django_filters_testapp')
-        settings.INSTALLED_APPS = apps
+    def _pre_setup(self):
+        self._original_INSTALLED_APPS = add_test_apps(self.TEST_APPS)
+        return super(TestCase, self)._pre_setup()
+
+    def _post_teardown(self):
+        settings.INSTALLED_APPS = self._original_INSTALLED_APPS
 
 
 class GenericViewTests(TestCase):
@@ -33,7 +38,6 @@ class GenericViewTests(TestCase):
     ]
 
     def setUp(self):
-        super(GenericViewTests, self).setUp()
         self.old_template_dir = settings.TEMPLATE_DIRS
         settings.TEMPLATE_DIRS = self.template_dirs
 
@@ -172,8 +176,8 @@ filter_tests = """
 >>> from django_filters.widgets import LinkWidget
 >>> from django_filters.tests.django_filters_testapp.models import User, Comment, Book, STATUS_CHOICES
 
->>> from django_filters.tests.tests import syncdb_test_app
->>> original_apps = syncdb_test_app('django_filters.tests.django_filters_testapp')
+>>> from django_filters.tests.tests import add_test_apps
+>>> original_apps = add_test_apps(['django_filters.tests.django_filters_testapp'])
 >>> call_command('loaddata', 'test_data', verbosity=0)
 >>> from django.conf import settings
 >>> settings.INSTALLED_APPS = original_apps
@@ -489,7 +493,7 @@ filter_tests = """
 </ul></td></tr>
 >>> f = F({'date': '4'})
 >>> f.qs
-[<Comment: alex said super awesome!>, <Comment: aaron said psycadelic!>]
+[]
 >>> f = F({})
 >>> print f.form
 <tr><th><label for="id_date">Date:</label></th><td><ul id="id_date">
