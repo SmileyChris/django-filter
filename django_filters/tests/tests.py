@@ -2,10 +2,27 @@ import datetime
 import os
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase as DjangoTestCase
 
 import django_filters
-from django_filters.tests.models import User, Comment, Book, Restaurant, Article, STATUS_CHOICES
+from django_filters.tests.django_filters_testapp.models import User, Comment, Book, Restaurant, Article, STATUS_CHOICES
+
+
+def syncdb_test_app(test_app):
+    from django.db.models.loading import load_app
+    from django.core.management import call_command
+    old_INSTALLED_APPS = settings.INSTALLED_APPS
+    settings.INSTALLED_APPS = tuple(settings.INSTALLED_APPS) + (test_app,)
+    load_app(test_app)
+    call_command('syncdb', verbosity=0, interactive=False)
+    return old_INSTALLED_APPS
+
+
+class TestCase(DjangoTestCase):
+
+    def setUp(self):
+        apps = syncdb_test_app('django_filters.tests.django_filters_testapp')
+        settings.INSTALLED_APPS = apps
 
 
 class GenericViewTests(TestCase):
@@ -16,6 +33,7 @@ class GenericViewTests(TestCase):
     ]
 
     def setUp(self):
+        super(GenericViewTests, self).setUp()
         self.old_template_dir = settings.TEMPLATE_DIRS
         settings.TEMPLATE_DIRS = self.template_dirs
 
@@ -152,9 +170,13 @@ filter_tests = """
 >>> import django_filters
 >>> from django_filters import FilterSet
 >>> from django_filters.widgets import LinkWidget
->>> from django_filters.tests.models import User, Comment, Book, STATUS_CHOICES
+>>> from django_filters.tests.django_filters_testapp.models import User, Comment, Book, STATUS_CHOICES
 
+>>> from django_filters.tests.tests import syncdb_test_app
+>>> original_apps = syncdb_test_app('django_filters.tests.django_filters_testapp')
 >>> call_command('loaddata', 'test_data', verbosity=0)
+>>> from django.conf import settings
+>>> settings.INSTALLED_APPS = original_apps
 
 >>> class F(FilterSet):
 ...     class Meta:
