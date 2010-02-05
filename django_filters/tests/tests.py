@@ -570,4 +570,18 @@ TypeError: Meta.fields contains a field that isn't defined on this FilterSet
 >>> f = F({'price_0': '15'})
 >>> f.qs
 [<Book: Rainbox Six>]
+>>> class F(FilterSet):
+...     class Meta:
+...         model = Book
+...         order_by = True
+>>> f = F(queryset=Book.objects.all())
+>>> print f.form
+<tr><th><label for="id_title">Title:</label></th><td><input type="text" name="title" id="id_title" /></td></tr>
+<tr><th><label for="id_price">Price:</label></th><td><input type="text" name="price" id="id_price" /></td></tr>
+<tr><th><label for="id_average_rating">Average rating:</label></th><td><input type="text" name="average_rating" id="id_average_rating" /></td></tr>
+<tr><th><label for="id_o">Ordering:</label></th><td><select name="o" id="id_o">
+<option value="title">Title</option>
+<option value="price">Price</option>
+<option value="average_rating">Average rating</option>
+</select></td></tr>
 """
