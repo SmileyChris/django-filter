@@ -27,7 +27,9 @@ class TestCase(DjangoTestCase):
         return super(TestCase, self)._pre_setup()
 
     def _post_teardown(self):
+        output = super(TestCase, self)._post_teardown()
         settings.INSTALLED_APPS = self._original_INSTALLED_APPS
+        return output
 
 
 class GenericViewTests(TestCase):
